@@ -1,0 +1,22 @@
+name: 问题反馈
+description: 报告可复现的问题
+title: "[Bug] "
+body:
+  - type: textarea
+    id: versions
+    attributes:
+      label: 环境与版本
+      description: 操作系统、服务端版本、客户端版本、编程工具版本；仅填与问题相关的项目。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤与预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 实际结果与脱敏日志
+      description: 请勿提供密钥、环境文件、数据库或私人对话。安全漏洞请按 SECURITY.md 私密报告。
