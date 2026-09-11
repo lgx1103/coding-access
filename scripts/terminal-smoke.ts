@@ -1,0 +1,15 @@
+import { mkdirSync, writeFileSync, chmodSync, existsSync, readFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
+import { launchTool, shellQuote } from '../src/desktop/launch.js';
+if (process.platform !== 'darwin') throw new Error('此验证仅针对 macOS Terminal，Windows 请使用实机清单');
+const root = resolve('.local/terminal-smoke'); const project = join(root, "project O'Brien [测试] $literal"); mkdirSync(project, { recursive: true });
+const resultPath = join(root, 'actual-directory.txt'); const executable = join(root, 'dummy cli');
+writeFileSync(executable, `#!/bin/sh\npwd > ${shellQuote(resultPath)}\n`, { mode: 0o700 }); chmodSync(executable, 0o700);
+  await launchTool('codex-cli', executable, project, root);
+  for (let i = 0; i < 100 && !existsSync(resultPath); i++) await delay(100);
+  const actual = existsSync(resultPath) ? readFileSync(resultPath, 'utf8').trim() : null;
+  if (actual !== project) throw new Error('Terminal 未在目标目录执行测试程序');
+  mkdirSync('output/verification', { recursive: true }); writeFileSync('output/verification/terminal-smoke.json', JSON.stringify({ platform: process.platform, createdAt: new Date().toISOString(), success: true, specialCharacters: ['spaces', 'apostrophe', 'Chinese', 'dollar'], realAgentLaunched: false }, null, 2));
+  process.stdout.write('macOS Terminal 启动验证通过：目录与特殊字符均保留，未启动真实 agent。\n');
+process.stdout.write('测试打开的 Terminal 窗口可直接关闭。\n');
