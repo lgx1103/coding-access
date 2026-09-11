@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { parse } from 'jsonc-parser';
 import { atomicWrite, ConfigManager } from '../src/desktop/config.js';
 import { findTool } from '../src/desktop/launch.js';
@@ -95,7 +95,7 @@ test('ZCode uses its official data base override and detects a user-installed de
   expect(custom.path('zcode')).toBe(join(manager.home, 'isolated/.zcode/v2/config.json'));
   const app = join(manager.home, 'Applications/ZCode.app'); mkdirSync(app, { recursive: true });
   // A system installation may also exist on the test host; either is a valid desktop app.
-  expect(findTool('zcode', manager.home, {}, 'darwin')).toMatch(/\/ZCode\.app$/);
+  expect(basename(findTool('zcode', manager.home, {}, 'darwin')!)).toBe('ZCode.app');
   expect(manager.warnings('zcode')).toContain('请先完全退出 ZCode 再应用或恢复配置。重新打开后，在模型选择器中选择 Coding Access 下的模型；已有会话不会自动切换。');
 });
 async function server(stream = false) {

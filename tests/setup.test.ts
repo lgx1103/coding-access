@@ -33,7 +33,8 @@ test('invalid Docker public addresses fail before creating any credentials', () 
   }
 });
 
-test('Docker initialization keeps only public release directory readable under restrictive umask', () => {
+// POSIX permission bits and umask are not supported by Windows.
+test.skipIf(process.platform === 'win32')('Docker initialization keeps only public release directory readable under restrictive umask', () => {
   const previous = process.umask(0o077);
   try {
     const cwd = directory(); expect(setup(cwd).status).toBe(0);

@@ -33,7 +33,8 @@ test('only current-version regular readable ZIPs are offered; directories and li
   expect((await app.inject(`/downloads/Coding-Access-${APP_VERSION}-win-x64.zip`)).statusCode).toBe(404);
   expect((await app.inject('/downloads/%2E%2E%2F.env')).statusCode).toBe(404);
 });
-test.skipIf(process.getuid?.() === 0)('unreadable directory and file permissions return actionable status rather than generic 500', () => {
+// chmod cannot model unreadable POSIX files on Windows.
+test.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('unreadable directory and file permissions return actionable status rather than generic 500', () => {
   const root = dir(); const name = join(root, `Coding-Access-${APP_VERSION}-win-x64.zip`); writeFileSync(name, 'test');
   chmodSync(name, 0); expect(clientReleases(root, APP_VERSION)).toMatchObject({ downloads: [], downloadIssue: { code: 'release_file_unavailable' } }); chmodSync(name, 0o644);
   chmodSync(root, 0); try { expect(clientReleases(root, APP_VERSION).downloadIssue?.code).toBe('release_directory_unavailable'); } finally { chmodSync(root, 0o755); }
