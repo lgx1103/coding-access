@@ -1,0 +1,351 @@
+[
+  {
+    "name": "claude-code: known capabilities",
+    "agent": "claude-code",
+    "source": "{\n// preserve my HUD\n\"env\":{\"PERSONAL\":\"keep\", \"ANTHROPIC_DEFAULT_FABLE_MODEL\":\"old\",\"ANTHROPIC_SMALL_FAST_MODEL\":\"old\"}, \"statusLine\":{\"type\":\"command\",\"command\":\"echo sample\"}, \"enabledPlugins\":{\"sample\":true}, \"permissions\":{\"allow\":[]},\n}\n",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "example-model",
+      "name": "Example 模型",
+      "description": "合成测试模型",
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "vision": true,
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [],
+    "expected": {
+      "env": {
+        "PERSONAL": "keep",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL": "example-model",
+        "ANTHROPIC_SMALL_FAST_MODEL": "example-model",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:4317",
+        "ANTHROPIC_AUTH_TOKEN": "synthetic-parity-token",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_MODEL": "example-model",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "example-model",
+        "CLAUDE_CODE_MAX_RETRIES": "0",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "example-model",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": "Example 模型",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "example-model",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME": "Example 模型",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "example-model",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": "Example 模型",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL_NAME": "Example 模型",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION": "合成测试模型",
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "1000000",
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000"
+      },
+      "statusLine": {
+        "type": "command",
+        "command": "echo sample"
+      },
+      "enabledPlugins": {
+        "sample": true
+      },
+      "permissions": {
+        "allow": []
+      },
+      "model": "example-model"
+    }
+  },
+  {
+    "name": "claude-code: clear previously managed capabilities",
+    "agent": "claude-code",
+    "source": "{\n// preserve my HUD\n\"env\": {\n  \"PERSONAL\": \"keep\",\n  \"ANTHROPIC_DEFAULT_FABLE_MODEL\": \"example-model\",\n  \"ANTHROPIC_SMALL_FAST_MODEL\": \"example-model\",\n  \"ANTHROPIC_BASE_URL\": \"http://127.0.0.1:4317\",\n  \"ANTHROPIC_AUTH_TOKEN\": \"synthetic-parity-token\",\n  \"ANTHROPIC_API_KEY\": \"\",\n  \"ANTHROPIC_MODEL\": \"example-model\",\n  \"CLAUDE_CODE_SUBAGENT_MODEL\": \"example-model\",\n  \"CLAUDE_CODE_MAX_RETRIES\": \"0\",\n  \"ANTHROPIC_DEFAULT_HAIKU_MODEL\": \"example-model\",\n  \"ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME\": \"Example 模型\",\n  \"ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION\": \"合成测试模型\",\n  \"ANTHROPIC_DEFAULT_SONNET_MODEL\": \"example-model\",\n  \"ANTHROPIC_DEFAULT_SONNET_MODEL_NAME\": \"Example 模型\",\n  \"ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION\": \"合成测试模型\",\n  \"ANTHROPIC_DEFAULT_OPUS_MODEL\": \"example-model\",\n  \"ANTHROPIC_DEFAULT_OPUS_MODEL_NAME\": \"Example 模型\",\n  \"ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION\": \"合成测试模型\",\n  \"ANTHROPIC_DEFAULT_FABLE_MODEL_NAME\": \"Example 模型\",\n  \"ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION\": \"合成测试模型\",\n  \"CLAUDE_CODE_MAX_CONTEXT_TOKENS\": \"1000000\",\n  \"CLAUDE_CODE_MAX_OUTPUT_TOKENS\": \"64000\"\n},\n\"statusLine\": {\n  \"type\": \"command\",\n  \"command\": \"echo sample\"\n},\n\"enabledPlugins\": {\n  \"sample\": true\n},\n\"permissions\": {\n  \"allow\": []\n},\n\"model\": \"example-model\",\n}\n",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "unknown-model",
+      "name": "Unknown",
+      "description": "合成测试模型",
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [
+      "contextWindow",
+      "maxOutputTokens"
+    ],
+    "expected": {
+      "env": {
+        "PERSONAL": "keep",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL": "unknown-model",
+        "ANTHROPIC_SMALL_FAST_MODEL": "unknown-model",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:4317",
+        "ANTHROPIC_AUTH_TOKEN": "synthetic-parity-token",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_MODEL": "unknown-model",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "unknown-model",
+        "CLAUDE_CODE_MAX_RETRIES": "0",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "unknown-model",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": "Unknown",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "unknown-model",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME": "Unknown",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "unknown-model",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": "Unknown",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION": "合成测试模型",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL_NAME": "Unknown",
+        "ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION": "合成测试模型"
+      },
+      "statusLine": {
+        "type": "command",
+        "command": "echo sample"
+      },
+      "enabledPlugins": {
+        "sample": true
+      },
+      "permissions": {
+        "allow": []
+      },
+      "model": "unknown-model"
+    }
+  },
+  {
+    "name": "codex-cli: known capabilities",
+    "agent": "codex-cli",
+    "source": "# preserve user projects\nmodel=\"old\"\n[features]\npersonal=true\n[projects.\"/example\"]\ntrust_level=\"trusted\"\n[model_providers.personal]\nname=\"Personal\"\nbase_url=\"https://example.invalid\"\n",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "example-model",
+      "name": "Example 模型",
+      "description": "合成测试模型",
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "vision": true,
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [],
+    "expected": {
+      "model": "example-model",
+      "model_provider": "coding_access",
+      "model_context_window": 1000000,
+      "model_auto_compact_token_limit": 800000,
+      "web_search": "disabled",
+      "features": {
+        "personal": true,
+        "enable_request_compression": false,
+        "respect_system_proxy": true
+      },
+      "projects": {
+        "/example": {
+          "trust_level": "trusted"
+        }
+      },
+      "model_providers": {
+        "personal": {
+          "name": "Personal",
+          "base_url": "https://example.invalid"
+        },
+        "coding_access": {
+          "name": "Coding Access",
+          "base_url": "http://127.0.0.1:4317/v1",
+          "wire_api": "responses",
+          "experimental_bearer_token": "synthetic-parity-token",
+          "requires_openai_auth": false,
+          "supports_websockets": false,
+          "request_max_retries": 0,
+          "stream_max_retries": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "codex-cli: clear previously managed capabilities",
+    "agent": "codex-cli",
+    "source": "model = \"example-model\"\nmodel_provider = \"coding_access\"\nmodel_context_window = 1_000_000\nmodel_auto_compact_token_limit = 800_000\nweb_search = \"disabled\"\n\n[features]\npersonal = true\nenable_request_compression = false\nrespect_system_proxy = true\n\n[projects.\"/example\"]\ntrust_level = \"trusted\"\n\n[model_providers.personal]\nname = \"Personal\"\nbase_url = \"https://example.invalid\"\n\n[model_providers.coding_access]\nname = \"Coding Access\"\nbase_url = \"http://127.0.0.1:4317/v1\"\nwire_api = \"responses\"\nexperimental_bearer_token = \"synthetic-parity-token\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "unknown-model",
+      "name": "Unknown",
+      "description": "合成测试模型",
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [
+      "contextWindow",
+      "maxOutputTokens"
+    ],
+    "expected": {
+      "model": "unknown-model",
+      "model_provider": "coding_access",
+      "web_search": "disabled",
+      "features": {
+        "personal": true,
+        "enable_request_compression": false,
+        "respect_system_proxy": true
+      },
+      "projects": {
+        "/example": {
+          "trust_level": "trusted"
+        }
+      },
+      "model_providers": {
+        "personal": {
+          "name": "Personal",
+          "base_url": "https://example.invalid"
+        },
+        "coding_access": {
+          "name": "Coding Access",
+          "base_url": "http://127.0.0.1:4317/v1",
+          "wire_api": "responses",
+          "experimental_bearer_token": "synthetic-parity-token",
+          "requires_openai_auth": false,
+          "supports_websockets": false,
+          "request_max_retries": 0,
+          "stream_max_retries": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "zcode: known capabilities",
+    "agent": "zcode",
+    "source": "{\n// preserve personal providers\n\"theme\":\"light\", \"provider\":{\"personal\":{\"name\":\"keep\"}, \"coding_access\":{\"source\":\"custom\",\"options\":{\"timeout\":123},\"models\":{\"example-model\":{\"reasoning\":true,\"zcode\":{\"custom\":true}}}}}\n}",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "example-model",
+      "name": "Example 模型",
+      "description": "合成测试模型",
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "vision": true,
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [],
+    "expected": {
+      "theme": "light",
+      "provider": {
+        "personal": {
+          "name": "keep"
+        },
+        "coding_access": {
+          "source": "custom",
+          "options": {
+            "timeout": 123,
+            "apiKey": "synthetic-parity-token",
+            "baseURL": "http://127.0.0.1:4317",
+            "apiKeyRequired": true
+          },
+          "models": {
+            "example-model": {
+              "reasoning": true,
+              "zcode": {
+                "custom": true,
+                "modalitiesConfigured": true
+              },
+              "name": "Example 模型",
+              "limit": {
+                "context": 1000000,
+                "output": 64000
+              },
+              "modalities": {
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "output": [
+                  "text"
+                ]
+              }
+            }
+          },
+          "name": "Coding Access",
+          "kind": "anthropic",
+          "enabled": true,
+          "headers": {
+            "x-coding-agent": "zcode"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "zcode: clear previously managed capabilities",
+    "agent": "zcode",
+    "source": "{\n// preserve personal providers\n\"theme\":\"light\", \"provider\":{\"personal\":{\"name\":\"keep\"}, \"coding_access\":{\n    \"source\": \"custom\",\n    \"options\": {\n      \"timeout\": 123,\n      \"apiKey\": \"synthetic-parity-token\",\n      \"baseURL\": \"http://127.0.0.1:4317\",\n      \"apiKeyRequired\": true\n    },\n    \"models\": {\n      \"example-model\": {\n        \"reasoning\": true,\n        \"zcode\": {\n          \"custom\": true,\n          \"modalitiesConfigured\": true\n        },\n        \"name\": \"Example 模型\",\n        \"limit\": {\n          \"context\": 1000000,\n          \"output\": 64000\n        },\n        \"modalities\": {\n          \"input\": [\n            \"text\",\n            \"image\"\n          ],\n          \"output\": [\n            \"text\"\n          ]\n        }\n      }\n    },\n    \"name\": \"Coding Access\",\n    \"kind\": \"anthropic\",\n    \"enabled\": true,\n    \"headers\": {\n      \"x-coding-agent\": \"zcode\"\n    }\n  }}\n}\n",
+    "base": "http://127.0.0.1:4317",
+    "credential": "synthetic-parity-token",
+    "model": {
+      "id": "unknown-model",
+      "name": "Unknown",
+      "description": "合成测试模型",
+      "agents": [
+        "claude-code",
+        "codex-cli",
+        "zcode"
+      ],
+      "updatedAt": 1,
+      "status": "available"
+    },
+    "managed": [
+      "contextWindow",
+      "maxOutputTokens"
+    ],
+    "expected": {
+      "theme": "light",
+      "provider": {
+        "personal": {
+          "name": "keep"
+        },
+        "coding_access": {
+          "source": "custom",
+          "options": {
+            "timeout": 123,
+            "apiKey": "synthetic-parity-token",
+            "baseURL": "http://127.0.0.1:4317",
+            "apiKeyRequired": true
+          },
+          "models": {
+            "unknown-model": {
+              "name": "Unknown",
+              "zcode": {}
+            }
+          },
+          "name": "Coding Access",
+          "kind": "anthropic",
+          "enabled": true,
+          "headers": {
+            "x-coding-agent": "zcode"
+          }
+        }
+      }
+    }
+  }
+]
