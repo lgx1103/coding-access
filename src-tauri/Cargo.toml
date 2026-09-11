@@ -1,0 +1,81 @@
+[package]
+name = "coding-access-native"
+version = "0.2.0-beta.12"
+edition = "2021"
+description = "Coding Access native desktop companion"
+license = "MIT"
+default-run = "coding-access-dev"
+
+[lib]
+name = "coding_access_native"
+path = "src/lib.rs"
+
+[[bin]]
+name = "coding-access-dev"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+verification = ["tauri/test"]
+distribution = []
+custom-protocol = ["tauri/custom-protocol"]
+default = ["desktop"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-plugin-opener", "dep:tauri-plugin-clipboard-manager", "dep:tauri-plugin-single-instance", "dep:tauri-plugin-updater", "dep:reqwest-updater", "dep:tauri-plugin-autostart"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonc-parser = { version = "0.33", features = ["cst", "serde"] }
+toml_edit = { version = "0.22", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+sha2 = "0.10"
+hex = "0.4"
+url = "2"
+regex = "1"
+tempfile = "3"
+dirs = "6"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "system-proxy"] }
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros", "process", "time", "io-util", "signal"] }
+base64 = "0.22"
+tauri = { version = "2", features = ["tray-icon"], optional = true }
+tauri-plugin-dialog = { version = "2", optional = true }
+tauri-plugin-opener = { version = "2", optional = true }
+tauri-plugin-clipboard-manager = { version = "2", optional = true }
+reqwest-updater = { package = "reqwest", version = "0.13", default-features = false, optional = true }
+tauri-plugin-updater = { version = "2", optional = true }
+semver = "1"
+tauri-plugin-autostart = { version = "2", optional = true }
+tauri-plugin-single-instance = { version = "2", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6", features = ["apple-native"] }
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWorkspace", "NSRunningApplication"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSBundle", "NSString", "NSURL"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3.6", features = ["windows-native"] }
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "s"
+
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+
+[[example]]
+name = "update_fixture"
+required-features = ["verification"]
+
+[[example]]
+name = "autostart_fixture"
+required-features = ["verification"]

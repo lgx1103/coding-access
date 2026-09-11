@@ -1,0 +1,76 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Coding Access",
+  "version": "0.2.0-beta.12",
+  "identifier": "com.codingaccess.native",
+  "build": {
+    "beforeDevCommand": "npm run dev:tauri:web",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist/tauri-web",
+    "beforeBuildCommand": "npm run build:tauri:web"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Coding Access · 团队模型管理",
+        "width": 1360,
+        "height": 930,
+        "minWidth": 860,
+        "minHeight": 660,
+        "create": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:; connect-src ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; object-src 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app",
+      "nsis"
+    ],
+    "icon": [
+      "../assets/icon.icns",
+      "../assets/icon.ico",
+      "../assets/icon.png"
+    ],
+    "category": "DeveloperTool",
+    "resources": {
+      "../LICENSE": "LICENSE",
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "THIRD_PARTY_RUST_NOTICES.txt": "THIRD_PARTY_RUST_NOTICES.txt"
+    },
+    "shortDescription": "公司团队模型客户端",
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI5RjdCQTQzMzc3RDU2OUEKUldTYVZuMDNRN3IzdVI0WGsxMGE1VHJqQWlydDBCUS9oeG1jd1pDM1BqVGZaTDUveHZJejJMYUUK",
+      "dangerousInsecureTransportProtocol": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}
