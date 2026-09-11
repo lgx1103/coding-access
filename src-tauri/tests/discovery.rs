@@ -80,8 +80,9 @@ fn cli_covers_npm_bun_pnpm_volta_and_numeric_nvm_versions_without_a_shell() {
     }
     let nvm = paths
         .iter()
-        .filter(|p| p.to_string_lossy().contains(".nvm/versions"))
+        .filter(|p| p.starts_with(root.join(".nvm/versions")))
         .collect::<Vec<_>>();
+    assert_eq!(nvm.len(), 3);
     assert_eq!(nvm[0], &root.join(".nvm/versions/node/v22.23.2/bin/codex"));
     assert_eq!(nvm[2], &root.join(".nvm/versions/node/v9.0.0/bin/codex"));
     for p in [
