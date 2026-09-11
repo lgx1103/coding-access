@@ -1,0 +1,9 @@
+# Replace the host with the company's internal DNS name.
+coding.company.internal {
+    # Use the company's issued certificate in production, or trust Caddy's
+    # internal CA on every client when using this local PKI example.
+    tls internal
+    reverse_proxy 127.0.0.1:4317 {
+        flush_interval -1
+    }
+}

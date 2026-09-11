@@ -1,0 +1,24 @@
+[Unit]
+Description=Coding Access private gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=coding-access
+Group=coding-access
+WorkingDirectory=/opt/coding-access
+EnvironmentFile=/opt/coding-access/.env
+ExecStart=/usr/bin/node /opt/coding-access/dist/server/main.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=25
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/coding-access/.local
+
+[Install]
+WantedBy=multi-user.target

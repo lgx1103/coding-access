@@ -1,0 +1,12 @@
+FROM node:24-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production ACA_HOST=0.0.0.0 ACA_PORT=4317 ACA_DB_PATH=/app/.local/access.sqlite ACA_DOWNLOADS_DIR=/app/release
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force && mkdir -p .local release && chown node:node .local release
+COPY dist/server ./dist/server
+COPY dist/web ./dist/web
+COPY dist/scripts ./dist/scripts
+USER node
+EXPOSE 4317
+STOPSIGNAL SIGTERM
+CMD ["node", "dist/server/main.js"]
