@@ -38,3 +38,6 @@ jobs:
       - run: npm run build:tauri:web
       - run: cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --locked
       - run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+        env:
+          # Direct cargo builds do not load the release icon configuration.
+          TAURI_CONFIG: '{"bundle":{"icon":["../assets/icon.ico","../assets/icon.png"]}}'
