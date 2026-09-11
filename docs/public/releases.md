@@ -1,6 +1,14 @@
 # 版本发布与升级
 
-服务端与客户端独立版本。客户端发布需要指定最低兼容的服务端版本。管理员在“设置与维护 → 客户端版本发布”上传产物、创建草稿，再发布；撤回后停止新的下载，不回退已经安装的客户端。
+服务端与客户端独立版本。客户端发布需要指定最低兼容的服务端版本。管理员在左侧“客户端发布”上传产物、创建草稿，再发布；撤回后停止新的下载，不回退已经安装的客户端。
+
+## 下载安装包
+
+- [服务端 0.1.22](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22)：管理员下载 `*-server.tar.gz`，按[部署文档](deployment.md)安装。
+- [客户端 0.2.0-beta.12](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.12)：Windows x64 下载 `*-setup.exe`；Mac Apple Silicon 下载 `*-mac-arm64.zip`。登录时填写自己团队的服务地址。
+- `.sig` 与 Mac 的 `*-update.tar.gz` 供管理员发布应用内更新使用。GitHub 自动生成的 `Source code` 是源码，并非客户端安装包。
+
+当前 Beta 的 Mac 包未经过 Apple 公证，Windows 包未使用发布者代码签名；应用内更新签名仅用于验证更新包，不能替代系统签名。其他平台的安装包暂未提供。
 
 ## 构建与签名
 

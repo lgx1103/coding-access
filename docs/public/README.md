@@ -4,6 +4,30 @@
 
 **公开测试版 · 服务端 0.1.22 · Tauri 客户端独立版本。** 适合单实例的团队内网部署。Windows、macOS 的主要安装和使用流程已由内部团队验收，并持续使用两周；这不代表所有系统版本、安装方式和厂商接口都已覆盖。
 
+[部署服务端](deployment.md) · [下载客户端](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.12) · [所有版本](https://github.com/lgx1103/coding-access/releases)
+
+## 界面预览
+
+以下截图来自独立演示环境，成员、用量与调用记录均为虚构数据，不包含公司真实密钥、地址或业务数据。
+
+**工作台：查看团队调用趋势与资源状态。**
+
+![工作台演示](images/overview.png)
+
+<details>
+<summary>模型目录：统一发布模型与分配接入</summary>
+
+![模型目录演示](images/models.png)
+
+</details>
+
+<details>
+<summary>用量统计：按日期、成员、模型筛选与查看排行</summary>
+
+![用量统计演示](images/usage.png)
+
+</details>
+
 ## 可以做什么
 
 - **供应商与密钥管理**：独立维护接入地址和产品套餐，调整密钥所属接入、并发、权重与可用范围。
@@ -27,6 +51,16 @@ npm run demo
 访问 <http://127.0.0.1:4317>，管理员账号 `admin`，演示密码 `DemoAccess2026!`。演示使用独立数据与模拟上游，不消耗真实模型额度。不要将演示作为正式服务公开。
 
 ## 正式部署与使用
+
+服务端和客户端分别下载、独立更新：
+
+| 使用者 | 下载文件 | 下一步 |
+|---|---|---|
+| 管理员 | [服务端 0.1.22](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22) 中的 `*-server.tar.gz` | 按[部署说明](deployment.md)在 Linux 服务器安装 |
+| Windows x64 成员 | [客户端 beta.12](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.12) 中的 `*-win-x64-setup.exe` | 运行安装程序 |
+| Mac Apple Silicon 成员 | 同一客户端 Release 中的 `*-mac-arm64.zip` | 解压，将 App 放入“应用程序” |
+
+`Source code` 是源码，不能直接当作客户端安装包。`.sig` 和 `*-update.tar.gz` 供管理员配置应用内更新使用。当前没有 Intel Mac / Linux 客户端安装包。
 
 1. 服务端：按[部署说明](deployment.md)初始化自己的管理员账号和主密钥。
 2. 管理员：创建供应商接入 → 添加密钥 → 创建并发布模型 → 添加成员。
