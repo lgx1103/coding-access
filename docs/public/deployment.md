@@ -2,18 +2,18 @@
 
 ## 方式一：Linux + Docker Compose
 
-推荐首次部署使用 [Release 的服务端运行包](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22)。Linux 服务器需安装 Docker Engine 与 Docker Compose v2，当前账号需有 Docker 操作权限；宿主机不需要安装 Node.js。
+推荐首次部署使用 [Release 的服务端运行包](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.23)。Linux 服务器需安装 Docker Engine 与 Docker Compose v2，当前账号需有 Docker 操作权限；宿主机不需要安装 Node.js。
 
 ### 1. 下载并校验运行包
 
 ```sh
 mkdir coding-access &&
 cd coding-access &&
-release_url=https://github.com/lgx1103/coding-access/releases/download/server-v0.1.22 &&
-curl -fLO "$release_url/Coding-Access-0.1.22-server.tar.gz" &&
+release_url=https://github.com/lgx1103/coding-access/releases/download/server-v0.1.23 &&
+curl -fLO "$release_url/Coding-Access-0.1.23-server.tar.gz" &&
 curl -fLO "$release_url/SHA256SUMS" &&
 sha256sum --check --ignore-missing SHA256SUMS &&
-  tar -xzf Coding-Access-0.1.22-server.tar.gz
+  tar -xzf Coding-Access-0.1.23-server.tar.gz
 ```
 
 确认校验输出 `OK` 后再解压。也可以在本机下载这两个文件并上传到服务器的同一目录，再执行校验和解压。不要下载自动生成的 `Source code` 来替代运行包。
@@ -84,7 +84,7 @@ npm run build
 ```sh
 bash <<'SH'
 set -eu
-upgrade_package=./Coding-Access-0.1.22-server.tar.gz
+upgrade_package=./Coding-Access-0.1.23-server.tar.gz
 tar -tzf "$upgrade_package" >/dev/null
 backup_dir=$(mktemp -d ../coding-access-backup-XXXXXXXX)
 chmod 700 "$backup_dir"

@@ -4,7 +4,7 @@
 
 ## 下载安装包
 
-- [服务端 0.1.22](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22)：管理员下载 `*-server.tar.gz`，按[部署文档](deployment.md)安装。
+- [服务端 0.1.23](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.23)：管理员下载 `*-server.tar.gz`，按[部署文档](deployment.md)安装。
 - [客户端 0.2.0-beta.14](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.14)：Windows x64 下载 `*-setup.exe`；Mac Apple Silicon 下载 `*-mac-arm64.zip`。登录时填写自己团队的服务地址。
 - `.sig` 与 Mac 的 `*-update.tar.gz` 供管理员发布应用内更新使用。GitHub 自动生成的 `Source code` 是源码，并非客户端安装包。
 
@@ -23,7 +23,7 @@
 ## 服务端升级
 
 1. 停止本项目服务前，先用项目备份工具备份数据库及配套 `.env`，保存在独立目录。
-2. 保留 `.local`、`.env`、`release`。按目标版本说明确认迁移；服务端 0.1.22 没有新增数据库迁移。
+2. 保留 `.local`、`.env`、`release`。按目标版本说明确认迁移；服务端 0.1.23 没有新增数据库迁移。
 3. 按 Docker 部署文档替换运行包并重建本项目容器，不对其他容器执行停止或清理命令。
 4. 检查健康接口、登录、权限、模型列表和统计，然后再分发客户端。
 5. 客户端上传文件位于 `.local/client-releases`。数据库备份包含发布元数据，但不包含安装包字节；需额外备份该目录。文件缺失时重新上传并发布新版本。
@@ -32,8 +32,8 @@
 
 更新失败时保留诊断信息，使用完整安装包恢复。不要删除客户端状态目录、系统钥匙串记录或编程工具配置。
 
-## 首次公开 Release
+## 公开 Release
 
-服务端建议标签 server-v0.1.22，标记为 Pre-release。附公开源码包、服务端运行包、校验文件和版本说明。客户端按独立版本发布，不直接上传含内部预设地址的企业安装包。
+服务端标签使用 `server-v<版本号>`，Beta 版本标记为 Pre-release。附公开源码包、服务端运行包、校验文件和版本说明。客户端按独立版本发布，不直接上传含内部预设地址的企业安装包。
 
 自行构建客户端时不设置 ACA_DEFAULT_SERVICE_URL，并使用自己的更新签名密钥。公钥本身不是秘密，源码保留现有公钥供兼容参考；正式分发前由客户端维护者核对发布身份。不得提交签名私钥。

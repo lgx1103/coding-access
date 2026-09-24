@@ -35,7 +35,7 @@
 
 | 下载 | 版本 | 安装方式 |
 |---|---|---|
-| [服务端](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22) | 0.1.22 | Linux + Docker Compose，见[部署文档](docs/public/deployment.md) |
+| [服务端](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.23) | 0.1.23 | Linux + Docker Compose，见[部署文档](docs/public/deployment.md) |
 | [Windows x64](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.14/Coding-Access-0.2.0-beta.14-win-x64-setup.exe) | 0.2.0-beta.14 | 下载并运行 EXE |
 | [macOS Apple Silicon](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.14/Coding-Access-0.2.0-beta.14-mac-arm64.zip) | 0.2.0-beta.14 | 解压后将 App 放入「应用程序」 |
 
