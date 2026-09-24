@@ -157,7 +157,10 @@ impl Client {
     }
     pub fn remembered_login(&self, server_url: &str, username: Option<&str>) -> Result<Value> {
         let base = base_url(server_url)?;
-        let name = username.filter(|s| !s.is_empty()).or_else(|| self.secrets.last_logins.get(&base).map(String::as_str)).unwrap_or("");
+        let name = username
+            .filter(|s| !s.is_empty())
+            .or_else(|| self.secrets.last_logins.get(&base).map(String::as_str))
+            .unwrap_or("");
         let saved = self.secrets.saved_logins.get(&Self::login_key(&base, name));
         // A renderer can request a saved login, but never receives its password.
         Ok(json!({"username": name, "remembered": saved.is_some_and(|s| s.password.is_some())}))
@@ -165,7 +168,9 @@ impl Client {
     pub fn forget_login(&mut self, server_url: &str, username: &str) -> Result<()> {
         let base = base_url(server_url)?;
         let mut secrets = self.secrets.clone();
-        secrets.saved_logins.remove(&Self::login_key(&base, username));
+        secrets
+            .saved_logins
+            .remove(&Self::login_key(&base, username));
         self.save_secrets(secrets)
     }
     pub fn clear_saved_logins(&mut self) -> Result<()> {
@@ -179,22 +184,46 @@ impl Client {
         if let Some(name) = &secrets.login_username {
             let key = Self::login_key(&secrets.server_url, name);
             if let Some(saved) = secrets.saved_logins.get_mut(&key) {
-                if saved.password.is_some() { saved.password = Some(password.into()); }
+                if saved.password.is_some() {
+                    saved.password = Some(password.into());
+                }
             }
         }
         self.save_secrets(secrets)
     }
-    pub async fn login_remembered(&mut self, server_url: &str, username: &str, password: &str, remember: bool, use_saved: bool) -> Result<Value> {
+    pub async fn login_remembered(
+        &mut self,
+        server_url: &str,
+        username: &str,
+        password: &str,
+        remember: bool,
+        use_saved: bool,
+    ) -> Result<Value> {
         let base = base_url(server_url)?;
         let key = Self::login_key(&base, username);
         let password = if use_saved {
-            self.secrets.saved_logins.get(&key).and_then(|s| s.password.clone()).ok_or("未保存此账号密码，请重新输入")?
-        } else { password.to_owned() };
+            self.secrets
+                .saved_logins
+                .get(&key)
+                .and_then(|s| s.password.clone())
+                .ok_or("未保存此账号密码，请重新输入")?
+        } else {
+            password.to_owned()
+        };
         let result = self.login(&base, username, &password).await?;
         let mut secrets = self.secrets.clone();
         secrets.last_logins.insert(base, username.into());
-        if remember { secrets.saved_logins.insert(key, SavedLogin { username: username.into(), password: Some(password) }); }
-        else { secrets.saved_logins.remove(&key); }
+        if remember {
+            secrets.saved_logins.insert(
+                key,
+                SavedLogin {
+                    username: username.into(),
+                    password: Some(password),
+                },
+            );
+        } else {
+            secrets.saved_logins.remove(&key);
+        }
         self.save_secrets(secrets)?;
         Ok(result)
     }
@@ -484,6 +513,27 @@ impl Client {
                     self.secrets.credential_id.as_deref(),
                     &models,
                 )?;
+                if let Some(key) = self.secrets.api_key.as_deref() {
+                    // A revoked gateway credential can still match the local
+                    // Agent config. Skip this probe when the catalog is offline.
+                    if let Ok((401, _)) = self
+                        .send(
+                            &self.preferences.server_url,
+                            "/v1/models",
+                            "GET",
+                            None,
+                            Some(key),
+                        )
+                        .await
+                    {
+                        state["credentialExpired"] = json!(true);
+                        if let Some(configured) = state["configured"].as_object_mut() {
+                            for entry in configured.values_mut() {
+                                entry["needsUpdate"] = json!(true);
+                            }
+                        }
+                    }
+                }
             }
         }
         Ok(state)

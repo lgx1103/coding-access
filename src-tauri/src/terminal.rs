@@ -654,14 +654,26 @@ pub fn windows_desktop_candidates(
     candidates.push(PathBuf::from(format!("C:/Program Files/{name}/{name}.exe")));
     if agent == Agent::CodexDesktop {
         // The desktop app now displays ChatGPT; retain old Codex installs too.
-        let mut roots = vec![local.join("Programs"), local, PathBuf::from("C:/Program Files")];
+        let mut roots = vec![
+            local.join("Programs"),
+            local,
+            PathBuf::from("C:/Program Files"),
+        ];
         for variable in ["ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"] {
-            if let Some(root) = env(variable).filter(|s| !s.is_empty()) { roots.push(PathBuf::from(root)); }
+            if let Some(root) = env(variable).filter(|s| !s.is_empty()) {
+                roots.push(PathBuf::from(root));
+            }
         }
         for root in roots {
-            for (directory, executable) in [("ChatGPT", "ChatGPT.exe"), ("Codex", "ChatGPT.exe"), ("ChatGPT", "Codex.exe")] {
+            for (directory, executable) in [
+                ("ChatGPT", "ChatGPT.exe"),
+                ("Codex", "ChatGPT.exe"),
+                ("ChatGPT", "Codex.exe"),
+            ] {
                 let path = root.join(directory).join(executable);
-                if !candidates.contains(&path) { candidates.push(path); }
+                if !candidates.contains(&path) {
+                    candidates.push(path);
+                }
             }
         }
     }
@@ -676,8 +688,12 @@ pub fn locate_tool(agent: Agent) -> Option<PathBuf> {
         #[cfg(target_os = "windows")]
         return windows_desktop_candidates(agent, &home, &|name| std::env::var_os(name))
             .into_iter()
-            .find(|p| usable_executable(p, true) &&
-                (agent != Agent::CodexDesktop || p.parent().is_some_and(|dir| dir.join("resources/app.asar").is_file())));
+            .find(|p| {
+                usable_executable(p, true)
+                    && (agent != Agent::CodexDesktop
+                        || p.parent()
+                            .is_some_and(|dir| dir.join("resources/app.asar").is_file()))
+            });
         #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         return None;
     }

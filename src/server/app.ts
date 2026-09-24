@@ -1,10 +1,11 @@
 import { downloadPage } from './download-page.js';
+import { isWebPagePath } from '../shared/web-routes.js';
 import Fastify, { type FastifyRequest } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import serveStatic from '@fastify/static';
 import { Readable } from 'node:stream';
-import { existsSync, createReadStream } from 'node:fs';
+import { existsSync, createReadStream, readFileSync } from 'node:fs';
 import { clientReleases } from './releases.js';
 import { registerUpdates } from './client-updates.js';
 import { analytics, analyticsExport, analyticsQuery } from './analytics.js';
@@ -332,7 +333,18 @@ export async function createApp(options: AppOptions) {
     });
   }
   const webRoot = options.webRoot ?? resolve('dist/web');
+  // The same relative-asset build is used by native clients. Give browser deep
+  // links a root base without changing the files packaged into those clients.
+  const webIndex = resolve(webRoot, 'index.html');
+  const browserHtml = existsSync(webIndex) ? readFileSync(webIndex, 'utf8').replace(/<head\b[^>]*>/i, '$&<base href="/">') : undefined;
   if (existsSync(webRoot)) await app.register(serveStatic, { root: webRoot, index: ['index.html'], list: false });
-  app.setNotFoundHandler((request, reply) => reply.code(404).send(errorBody(new ApiError(404, 'not_found', '接口不存在'), undefined, request.url.startsWith('/v1/messages') ? 'messages' : 'responses')));
+  app.setNotFoundHandler((request, reply) => {
+    const pathname = request.url.split('?')[0];
+    if (['GET', 'HEAD'].includes(request.method) && isWebPagePath(pathname) && browserHtml !== undefined) {
+      return reply.code(200).header('Cache-Control', 'no-cache').type('text/html')
+        .header('Content-Length', Buffer.byteLength(browserHtml)).send(request.method === 'HEAD' ? undefined : browserHtml);
+    }
+    return reply.code(404).send(errorBody(new ApiError(404, 'not_found', '接口不存在'), undefined, request.url.startsWith('/v1/messages') ? 'messages' : 'responses'));
+  });
   return { app, gateway };
 }

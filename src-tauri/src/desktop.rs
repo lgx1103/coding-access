@@ -45,8 +45,14 @@ pub struct AppState(Mutex<Result<Client>>);
 )]
 pub enum BridgeRequest {
     GetState,
-    GetRememberedLogin { server_url: String, username: Option<String> },
-    ForgetLogin { server_url: String, username: String },
+    GetRememberedLogin {
+        server_url: String,
+        username: Option<String>,
+    },
+    ForgetLogin {
+        server_url: String,
+        username: String,
+    },
     ClearSavedLogins,
     CloseWindow {
         choice: String,
@@ -206,9 +212,21 @@ async fn coding_access(
     match request {
         BridgeRequest::Update { .. } | BridgeRequest::CloseWindow { .. } => unreachable!(),
         BridgeRequest::GetState => client.live_state().await,
-        BridgeRequest::GetRememberedLogin { server_url, username } => client.remembered_login(&server_url, username.as_deref()),
-        BridgeRequest::ForgetLogin { server_url, username } => { client.forget_login(&server_url, &username)?; Ok(Value::Null) },
-        BridgeRequest::ClearSavedLogins => { client.clear_saved_logins()?; Ok(Value::Null) },
+        BridgeRequest::GetRememberedLogin {
+            server_url,
+            username,
+        } => client.remembered_login(&server_url, username.as_deref()),
+        BridgeRequest::ForgetLogin {
+            server_url,
+            username,
+        } => {
+            client.forget_login(&server_url, &username)?;
+            Ok(Value::Null)
+        }
+        BridgeRequest::ClearSavedLogins => {
+            client.clear_saved_logins()?;
+            Ok(Value::Null)
+        }
         BridgeRequest::GetSettings => {
             let mut result = client.settings()?;
             let isolated = client.config.paths.isolated;
@@ -329,7 +347,9 @@ async fn coding_access(
             use_saved,
         } => {
             window.state::<crate::updates::Updates>().reset();
-            client.login_remembered(&server_url, &username, &password, remember, use_saved).await
+            client
+                .login_remembered(&server_url, &username, &password, remember, use_saved)
+                .await
         }
         BridgeRequest::Logout => {
             window.state::<crate::updates::Updates>().reset();
@@ -337,11 +357,21 @@ async fn coding_access(
             Ok(Value::Null)
         }
         BridgeRequest::Request { path, method, body } => {
-            let new_password = if path == "/api/auth/password" && method.as_deref() == Some("POST") { body.as_ref().and_then(|v| v["newPassword"].as_str()).map(str::to_owned) } else { None };
-            let mut result = client.request(&path, method.as_deref().unwrap_or("GET"), body).await?;
+            let new_password = if path == "/api/auth/password" && method.as_deref() == Some("POST")
+            {
+                body.as_ref()
+                    .and_then(|v| v["newPassword"].as_str())
+                    .map(str::to_owned)
+            } else {
+                None
+            };
+            let mut result = client
+                .request(&path, method.as_deref().unwrap_or("GET"), body)
+                .await?;
             if let Some(password) = new_password {
                 if client.refresh_saved_password(&password).is_err() {
-                    result["warning"] = json!("密码已修改，但本机保存的密码未能更新，请下次登录时输入新密码。");
+                    result["warning"] =
+                        json!("密码已修改，但本机保存的密码未能更新，请下次登录时输入新密码。");
                 }
             }
             Ok(result)
@@ -350,11 +380,16 @@ async fn coding_access(
             let mut found = client.tool_path(agent);
             let installed = if agent.desktop() && found.is_none() {
                 match agents::desktop_target(agent).await? {
-                    Some(agents::DesktopTarget::File(path)) => { found = Some(path); true }
+                    Some(agents::DesktopTarget::File(path)) => {
+                        found = Some(path);
+                        true
+                    }
                     Some(agents::DesktopTarget::Store(_)) => true,
                     None => false,
                 }
-            } else { found.is_some() };
+            } else {
+                found.is_some()
+            };
             let version = if let Some(p) = &found {
                 if agent.desktop() {
                     None

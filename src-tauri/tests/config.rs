@@ -159,6 +159,180 @@ fn zcode_metadata_and_foreign_settings_survive_restore() {
     assert_eq!(v["provider"]["personal"]["name"], "keep");
     assert!(v["provider"].get("coding_access").is_none());
 }
+
+fn personal_config(key: &str) -> String {
+    json!({
+        "schemaVersion": 1,
+        "config": {
+            "providerConfigRules": { "providerRules": [
+                {"providerId":"other","config":{"access":{"apiKey":"untouched"}}},
+                {"providerId":"coding_access","enabled":true,"config":{
+                    "access":{"type":"api-key","apiKey":key},
+                    "api":{"type":"anthropic-messages","baseUrl":"http://localhost:4317"},
+                    "personalModelIds":["old-model"],"modelOrder":["old-model"]
+                }}
+            ]},
+            "defaultModelSelection":{"providerId":"coding_access","modelId":"old-model"},
+            "userPreference":"keep"
+        }
+    })
+    .to_string()
+}
+
+#[test]
+fn zcode_syncs_runtime_personal_provider_and_restores_only_managed_rule() {
+    let (_t, m) = manager();
+    let legacy = m.path(Agent::Zcode);
+    let personal = legacy.with_file_name("provider_config.json");
+    let desired = model(None);
+    let legacy_original =
+        zcode_configuration("{}", "http://localhost:4317", "new-key", &desired).unwrap();
+    atomic_write(&legacy, legacy_original.as_bytes()).unwrap();
+    atomic_write(&personal, personal_config("old-key").as_bytes()).unwrap();
+    assert!(!m
+        .configuration_matches(Agent::Zcode, &desired, "http://localhost:4317", "new-key")
+        .unwrap());
+    assert!(m
+        .apply_checked(
+            Agent::Zcode,
+            &desired,
+            "http://localhost:4317",
+            "new-key",
+            "id",
+            true
+        )
+        .is_err());
+    let result = m
+        .apply(
+            Agent::Zcode,
+            &desired,
+            "http://localhost:4317",
+            "new-key",
+            "id",
+        )
+        .unwrap();
+    assert_eq!(result["changed"], true);
+    assert!(!m.configured(Some("id")).unwrap()["zcode"]["needsUpdate"]
+        .as_bool()
+        .unwrap());
+    let mut saved: Value =
+        serde_json::from_str(&read_optional(&personal).unwrap().unwrap()).unwrap();
+    assert_eq!(
+        saved["config"]["providerConfigRules"]["providerRules"][1]["config"]["access"]["apiKey"],
+        "new-key"
+    );
+    assert_eq!(
+        saved["config"]["defaultModelSelection"]["modelId"],
+        "example-model"
+    );
+    assert_eq!(
+        saved["config"]["providerConfigRules"]["providerRules"][0]["config"]["access"]["apiKey"],
+        "untouched"
+    );
+    assert!(m
+        .configuration_matches(Agent::Zcode, &desired, "http://localhost:4317", "new-key")
+        .unwrap());
+    saved["config"]["userPreference"] = json!("later-change");
+    save_json(&personal, &saved).unwrap();
+    m.restore(Agent::Zcode).unwrap();
+    let restored: Value =
+        serde_json::from_str(&read_optional(&personal).unwrap().unwrap()).unwrap();
+    assert_eq!(
+        restored["config"]["providerConfigRules"]["providerRules"][1]["config"]["access"]["apiKey"],
+        "old-key"
+    );
+    assert_eq!(
+        restored["config"]["defaultModelSelection"]["modelId"],
+        "old-model"
+    );
+    assert_eq!(restored["config"]["userPreference"], "later-change");
+    assert_eq!(read_optional(&legacy).unwrap().unwrap(), legacy_original);
+}
+
+#[test]
+fn zcode_rejects_unknown_personal_schema_before_touching_legacy() {
+    let (_t, m) = manager();
+    let legacy = m.path(Agent::Zcode);
+    let personal = legacy.with_file_name("provider_config.json");
+    atomic_write(&personal, br#"{"schemaVersion":99,"config":{}}"#).unwrap();
+    assert!(m
+        .apply(Agent::Zcode, &model(None), "http://localhost", "key", "id")
+        .is_err());
+    assert!(!legacy.exists());
+    assert_eq!(
+        read_optional(&personal).unwrap().unwrap(),
+        r#"{"schemaVersion":99,"config":{}}"#
+    );
+}
+
+#[test]
+fn zcode_sync_after_one_time_import_removes_only_imported_rule_on_restore() {
+    let (_t, m) = manager();
+    let personal = m.path(Agent::Zcode).with_file_name("provider_config.json");
+    let desired = model(None);
+    m.apply(
+        Agent::Zcode,
+        &desired,
+        "http://localhost:4317",
+        "new-key",
+        "id",
+    )
+    .unwrap();
+    atomic_write(&personal, personal_config("old-key").as_bytes()).unwrap();
+    assert!(m.configured(Some("id")).unwrap()["zcode"]["needsUpdate"]
+        .as_bool()
+        .unwrap());
+    m.apply(
+        Agent::Zcode,
+        &desired,
+        "http://localhost:4317",
+        "new-key",
+        "id",
+    )
+    .unwrap();
+    m.restore(Agent::Zcode).unwrap();
+    let restored: Value =
+        serde_json::from_str(&read_optional(&personal).unwrap().unwrap()).unwrap();
+    assert_eq!(
+        restored["config"]["providerConfigRules"]["providerRules"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        restored["config"]["providerConfigRules"]["providerRules"][0]["providerId"],
+        "other"
+    );
+    assert!(restored["config"].get("defaultModelSelection").is_none());
+}
+
+#[test]
+fn zcode_interrupted_two_file_write_finishes_both_files() {
+    let (_t, m) = manager();
+    let agent = Agent::Zcode;
+    let personal = m.path(agent).with_file_name("provider_config.json");
+    let desired = model(None);
+    m.apply(agent, &desired, "http://localhost:4317", "new-key", "id")
+        .unwrap();
+    let legacy = read_optional(&m.path(agent)).unwrap().unwrap();
+    let before = personal_config("old-key");
+    let after = zcode_personal_configuration(&before, "http://localhost:4317", "new-key", &desired)
+        .unwrap();
+    atomic_write(&personal, before.as_bytes()).unwrap();
+    let records = m.records().unwrap();
+    save_json(
+        &m.paths.state.join("config-transaction.json"),
+        &json!({
+            "agent":agent,"before":legacy,"after":legacy,"records":records,
+            "auxiliary":{"path":personal,"before":before,"after":after}
+        }),
+    )
+    .unwrap();
+    m.records().unwrap();
+    assert_eq!(read_optional(&personal).unwrap().unwrap(), after);
+    assert!(!m.paths.state.join("config-transaction.json").exists());
+}
 #[test]
 fn personal_context_override_preserved_until_owned() {
     let m = model(None);

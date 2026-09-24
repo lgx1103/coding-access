@@ -69,22 +69,40 @@ struct WindowsCodexProbe {
 #[cfg(any(windows, test))]
 impl WindowsCodexProbe {
     fn target(self) -> Option<DesktopTarget> {
-        if let Some(id) = self.app_id.filter(|id| valid_store_id(id) && id.starts_with("OpenAI.Codex")) {
+        if let Some(id) = self
+            .app_id
+            .filter(|id| valid_store_id(id) && id.starts_with("OpenAI.Codex"))
+        {
             return Some(DesktopTarget::Store(id));
         }
-        self.path.filter(|p| {
-            // PowerShell verifies desktop resources; reject malformed paths at
-            // the bridge boundary as well. No shell interpolation is used.
-            !p.chars().any(char::is_control) && (p.as_bytes().get(1) == Some(&b':') || p.starts_with("\\\\"))
-        }).map(|p| DesktopTarget::File(PathBuf::from(p)))
+        self.path
+            .filter(|p| {
+                // PowerShell verifies desktop resources; reject malformed paths at
+                // the bridge boundary as well. No shell interpolation is used.
+                !p.chars().any(char::is_control)
+                    && (p.as_bytes().get(1) == Some(&b':') || p.starts_with("\\\\"))
+            })
+            .map(|p| DesktopTarget::File(PathBuf::from(p)))
     }
 }
 #[cfg(windows)]
 async fn windows_codex_probe() -> Result<WindowsCodexProbe> {
     // Encode the script so Windows command-line quoting cannot change its text.
     let script = terminal::encoded_ps(include_str!("windows_codex.ps1"));
-    let result = output("powershell.exe", &["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", &script]).await?;
-    if !result.status.success() { return Err("无法检查 Codex 桌面版，请在设置中重新检测或指定安装路径".into()); }
+    let result = output(
+        "powershell.exe",
+        &[
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-EncodedCommand",
+            &script,
+        ],
+    )
+    .await?;
+    if !result.status.success() {
+        return Err("无法检查 Codex 桌面版，请在设置中重新检测或指定安装路径".into());
+    }
     serde_json::from_slice(&result.stdout).map_err(|_| "无法读取 Codex 桌面版检测结果".into())
 }
 pub fn valid_store_id(id: &str) -> bool {
@@ -233,7 +251,10 @@ mod windows_codex_tests {
         let probe: WindowsCodexProbe = serde_json::from_str(r#"{"running":true,"appId":"OpenAI.Codex_123!App","path":"D:\\Apps\\Codex\\Codex.exe"}"#).unwrap();
         assert!(probe.running);
         assert!(matches!(probe.target(), Some(DesktopTarget::Store(_))));
-        let probe: WindowsCodexProbe = serde_json::from_str(r#"{"running":true,"appId":null,"path":"D:\\Apps\\Codex\\Codex.exe"}"#).unwrap();
+        let probe: WindowsCodexProbe = serde_json::from_str(
+            r#"{"running":true,"appId":null,"path":"D:\\Apps\\Codex\\Codex.exe"}"#,
+        )
+        .unwrap();
         assert!(matches!(probe.target(), Some(DesktopTarget::File(_))));
     }
     #[test]
@@ -244,7 +265,8 @@ mod windows_codex_tests {
         assert!(serde_json::from_str::<WindowsCodexProbe>(legacy).is_err());
         let probe: WindowsCodexProbe = serde_json::from_str(
             r#"{"running":false,"appId":"OpenAI.Codex_2p2nqsd0c76g0!App","path":null}"#,
-        ).unwrap();
+        )
+        .unwrap();
         assert!(!probe.running);
         assert!(matches!(probe.target(), Some(DesktopTarget::Store(_))));
     }
@@ -254,9 +276,12 @@ mod windows_codex_tests {
         use base64::Engine;
         let script = format!("{}\n# 中文路径", include_str!("windows_codex.ps1"));
         let bytes = base64::engine::general_purpose::STANDARD
-            .decode(terminal::encoded_ps(&script)).unwrap();
-        let utf16: Vec<u16> = bytes.chunks_exact(2)
-            .map(|pair| u16::from_le_bytes([pair[0], pair[1]])).collect();
+            .decode(terminal::encoded_ps(&script))
+            .unwrap();
+        let utf16: Vec<u16> = bytes
+            .chunks_exact(2)
+            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+            .collect();
         assert_eq!(String::from_utf16(&utf16).unwrap(), script);
     }
 
@@ -266,20 +291,35 @@ mod windows_codex_tests {
     fn windows_powershell_discovery_contract() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let output = std::process::Command::new("powershell.exe")
-            .args(["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand"])
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-EncodedCommand",
+            ])
             .arg(terminal::encoded_ps(&format!(
                 "& {} -ProbePath {}",
-                terminal::powershell_quote(root.join("tests/windows-codex-probe.ps1").to_str().unwrap()),
+                terminal::powershell_quote(
+                    root.join("tests/windows-codex-probe.ps1").to_str().unwrap()
+                ),
                 terminal::powershell_quote(root.join("src/windows_codex.ps1").to_str().unwrap()),
             )))
-            .output().unwrap();
-        assert!(output.status.success(), "stdout: {}\nstderr: {}",
-            String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "stdout: {}\nstderr: {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     #[test]
     fn absent_or_invalid_discovery_does_not_claim_installation() {
-        for data in [r#"{"running":false,"appId":null,"path":null}"#, r#"{"running":false,"appId":"Other.App!App","path":"relative.exe"}"#] {
+        for data in [
+            r#"{"running":false,"appId":null,"path":null}"#,
+            r#"{"running":false,"appId":"Other.App!App","path":"relative.exe"}"#,
+        ] {
             let probe: WindowsCodexProbe = serde_json::from_str(data).unwrap();
             assert!(probe.target().is_none());
         }

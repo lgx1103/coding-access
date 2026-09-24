@@ -4,7 +4,7 @@
 
 管理员在服务端配置供应商、API Key 和模型，成员通过桌面客户端登录、选择模型，在 Claude Code、Codex CLI、ChatGPT 桌面版或 ZCode 中使用。供应商密钥保存在服务端，每位成员使用独立的访问凭证。
 
-[下载客户端](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.12) · [部署服务端](deployment.md) · [提交问题](https://github.com/lgx1103/coding-access/issues)
+[下载客户端](https://github.com/lgx1103/coding-access/releases/tag/client-v0.2.0-beta.14) · [部署服务端](deployment.md) · [提交问题](https://github.com/lgx1103/coding-access/issues)
 
 ![工作台](images/overview.png)
 
@@ -36,8 +36,8 @@
 | 下载 | 版本 | 安装方式 |
 |---|---|---|
 | [服务端](https://github.com/lgx1103/coding-access/releases/tag/server-v0.1.22) | 0.1.22 | Linux + Docker Compose，见[部署文档](deployment.md) |
-| [Windows x64](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.12/Coding-Access-0.2.0-beta.12-win-x64-setup.exe) | 0.2.0-beta.12 | 下载并运行 EXE |
-| [macOS Apple Silicon](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.12/Coding-Access-0.2.0-beta.12-mac-arm64.zip) | 0.2.0-beta.12 | 解压后将 App 放入「应用程序」 |
+| [Windows x64](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.14/Coding-Access-0.2.0-beta.14-win-x64-setup.exe) | 0.2.0-beta.14 | 下载并运行 EXE |
+| [macOS Apple Silicon](https://github.com/lgx1103/coding-access/releases/download/client-v0.2.0-beta.14/Coding-Access-0.2.0-beta.14-mac-arm64.zip) | 0.2.0-beta.14 | 解压后将 App 放入「应用程序」 |
 
 服务端部署完成后，管理员添加供应商和密钥、发布模型，再创建成员账号。成员安装客户端，填写团队服务地址并登录，即可获取有权限使用的模型。编程工具需要自行安装。
 

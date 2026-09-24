@@ -1,6 +1,6 @@
 {
   "name": "ai-coding-access",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "private": true,
   "description": "A private, model-aware coding gateway and desktop companion for teams.",
   "type": "module",

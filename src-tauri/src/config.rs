@@ -260,6 +260,173 @@ pub(crate) fn zcode_hash(source: &str) -> Result<String> {
     Ok(hash(serde_json::to_string(&p).unwrap().as_bytes()))
 }
 
+// ZCode 3.14 reads the personal provider overlay after its one-time import of
+// v2/config.json. Keep the legacy file for older releases and update this
+// overlay only when ZCode has already created it.
+pub fn zcode_personal_configuration(
+    source: &str,
+    base: &str,
+    credential: &str,
+    model: &Model,
+) -> Result<String> {
+    model.validate()?;
+    let mut value = zcode_personal_object(source)?;
+    let rules = zcode_personal_rules_mut(&mut value)?;
+    let index = rules
+        .iter()
+        .position(|rule| rule["providerId"] == "coding_access");
+    let mut rule = index
+        .map(|index| rules[index].clone())
+        .unwrap_or_else(|| json!({"providerId":"coding_access","config":{}}));
+    let fields = rule.as_object_mut().ok_or("ZCode 新版供应商规则格式无效")?;
+    fields.insert("providerName".into(), json!("Coding Access"));
+    fields.insert("enabled".into(), json!(true));
+    let config = fields
+        .entry("config")
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or("ZCode 新版供应商配置格式无效")?;
+    config.insert("group".into(), json!("standard-personal"));
+    let access = config
+        .entry("access")
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or("ZCode 新版鉴权配置格式无效")?;
+    access.insert("type".into(), json!("api-key"));
+    access.insert("apiKey".into(), json!(credential));
+    let api = config
+        .entry("api")
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or("ZCode 新版接口配置格式无效")?;
+    api.insert("type".into(), json!("anthropic-messages"));
+    api.insert("baseUrl".into(), json!(base.trim_end_matches('/')));
+    let headers = api
+        .entry("headers")
+        .or_insert_with(|| json!({}))
+        .as_object_mut()
+        .ok_or("ZCode 新版请求头配置格式无效")?;
+    headers.insert("x-coding-agent".into(), json!("zcode"));
+    config.insert("personalModelIds".into(), json!([model.id.clone()]));
+    config.insert("modelOrder".into(), json!([model.id.clone()]));
+    if let Some(index) = index {
+        rules[index] = rule;
+    } else {
+        rules.push(rule);
+    }
+    if let Some(selection) = value.pointer_mut("/config/defaultModelSelection") {
+        if selection["providerId"] == "coding_access" {
+            selection["modelId"] = json!(model.id);
+        }
+    }
+    serde_json::to_string_pretty(&value)
+        .map(|s| format!("{s}\n"))
+        .map_err(|_| "无法生成 ZCode 新版供应商配置".into())
+}
+
+fn zcode_personal_object(source: &str) -> Result<Value> {
+    let value: Value =
+        serde_json::from_str(source).map_err(|_| "ZCode 新版供应商配置不是有效 JSON")?;
+    if value["schemaVersion"] != 1 {
+        return Err("ZCode 新版供应商配置版本不受支持，已暂停写入".into());
+    }
+    if !value.is_object() {
+        return Err("ZCode 新版供应商配置必须是对象".into());
+    }
+    Ok(value)
+}
+
+fn zcode_personal_rules_mut(value: &mut Value) -> Result<&mut Vec<Value>> {
+    value
+        .pointer_mut("/config/providerConfigRules/providerRules")
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| "ZCode 新版供应商规则格式无效".into())
+}
+
+fn zcode_personal_rule(source: &str) -> Result<Option<Value>> {
+    let value = zcode_personal_object(source)?;
+    let rules = value
+        .pointer("/config/providerConfigRules/providerRules")
+        .and_then(Value::as_array)
+        .ok_or("ZCode 新版供应商规则格式无效")?;
+    Ok(rules
+        .iter()
+        .find(|rule| rule["providerId"] == "coding_access")
+        .cloned())
+}
+
+fn zcode_personal_managed_hash(source: &str) -> Result<String> {
+    let rule = zcode_personal_rule(source)?;
+    let value = zcode_personal_object(source)?;
+    let selection = value.pointer("/config/defaultModelSelection");
+    let selected_model = selection
+        .filter(|selection| selection["providerId"] == "coding_access")
+        .map(|selection| &selection["modelId"]);
+    let managed = rule.map(|rule| {
+        json!({
+            "enabled": rule["enabled"],
+            "accessType": rule["config"]["access"]["type"],
+            "apiKey": rule["config"]["access"]["apiKey"],
+            "apiType": rule["config"]["api"]["type"],
+            "baseUrl": rule["config"]["api"]["baseUrl"],
+            "agent": rule["config"]["api"]["headers"]["x-coding-agent"],
+            "models": rule["config"]["personalModelIds"],
+            "modelOrder": rule["config"]["modelOrder"],
+            "selectedModel": selected_model
+        })
+    });
+    Ok(hash(
+        serde_json::to_vec(&managed)
+            .map_err(|_| "无法校验 ZCode 新版供应商配置")?
+            .as_slice(),
+    ))
+}
+
+fn zcode_personal_restored(
+    source: &str,
+    original: Option<&str>,
+    applied_model_id: &str,
+) -> Result<String> {
+    let original_rule = original.map(zcode_personal_rule).transpose()?.flatten();
+    let original_selection = original
+        .map(zcode_personal_object)
+        .transpose()?
+        .and_then(|value| value.pointer("/config/defaultModelSelection").cloned());
+    let mut value = zcode_personal_object(source)?;
+    let rules = zcode_personal_rules_mut(&mut value)?;
+    let index = rules
+        .iter()
+        .position(|rule| rule["providerId"] == "coding_access");
+    match (index, original_rule) {
+        (Some(index), Some(rule)) => rules[index] = rule,
+        (Some(index), None) => {
+            rules.remove(index);
+        }
+        (None, Some(rule)) => rules.push(rule),
+        (None, None) => {}
+    }
+    if value
+        .pointer("/config/defaultModelSelection")
+        .is_some_and(|selection| {
+            selection["providerId"] == "coding_access" && selection["modelId"] == applied_model_id
+        })
+    {
+        if let Some(config) = value.get_mut("config").and_then(Value::as_object_mut) {
+            match original_selection {
+                Some(selection) => {
+                    config.insert("defaultModelSelection".into(), selection);
+                }
+                None => {
+                    config.remove("defaultModelSelection");
+                }
+            }
+        }
+    }
+    serde_json::to_string_pretty(&value)
+        .map(|s| format!("{s}\n"))
+        .map_err(|_| "无法恢复 ZCode 新版供应商配置".into())
+}
+
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Record {
@@ -278,6 +445,12 @@ pub struct Record {
     pub zcode_provider_hash: Option<String>,
     #[serde(default)]
     pub preserve_zcode_external_changes: bool,
+    #[serde(default)]
+    pub zcode_personal_backup: Option<PathBuf>,
+    #[serde(default)]
+    pub zcode_personal_original_exists: bool,
+    #[serde(default)]
+    pub zcode_personal_hash: Option<String>,
 }
 type Records = BTreeMap<String, Record>;
 
@@ -299,6 +472,14 @@ struct Journal {
     before: Option<String>,
     after: Option<String>,
     records: Records,
+    #[serde(default)]
+    auxiliary: Option<AuxiliaryFile>,
+}
+#[derive(Deserialize, Serialize)]
+struct AuxiliaryFile {
+    path: PathBuf,
+    before: Option<String>,
+    after: Option<String>,
 }
 pub struct ConfigManager {
     pub paths: Paths,
@@ -345,7 +526,17 @@ impl ConfigManager {
         // Compare the result of merging the desired configuration into the current file.
         // Formatting, plugins, UI preferences and ZCode-added metadata are not changes
         // to the connection we manage. No credentials leave the native process.
-        Ok(semantic_hash(agent, &source)? == semantic_hash(agent, &next)?)
+        if semantic_hash(agent, &source)? != semantic_hash(agent, &next)? {
+            return Ok(false);
+        }
+        if agent == Agent::Zcode {
+            if let Some(personal) = read_optional(&self.zcode_personal_path())? {
+                let desired = zcode_personal_configuration(&personal, base, credential, model)?;
+                return Ok(zcode_personal_managed_hash(&personal)?
+                    == zcode_personal_managed_hash(&desired)?);
+            }
+        }
+        Ok(true)
     }
     pub fn configured_with_targets(
         &self,
@@ -383,6 +574,12 @@ impl ConfigManager {
         })
     }
 
+    fn zcode_personal_path(&self) -> PathBuf {
+        self.paths
+            .config_directory(Agent::Zcode)
+            .join("provider_config.json")
+    }
+
     fn record_path(&self) -> PathBuf {
         self.paths.state.join("config-records.json")
     }
@@ -395,10 +592,24 @@ impl ConfigManager {
             let j: Journal =
                 serde_json::from_str(&s).map_err(|_| "配置事务记录无效，请检查本地备份")?;
             let source = self.source(j.agent)?;
-            if source == j.after {
-                save_json(&self.record_path(), &j.records)?;
-            } else if source != j.before {
+            if source != j.before && source != j.after {
                 return Err("配置写入中断后又被外部修改，请检查本地备份".into());
+            }
+            if let Some(aux) = &j.auxiliary {
+                if aux.path != self.zcode_personal_path() || j.agent != Agent::Zcode {
+                    return Err("配置事务的附属文件路径无效".into());
+                }
+                let current = read_optional(&aux.path)?;
+                if current != aux.before && current != aux.after {
+                    return Err("配置写入中断后又被外部修改，请检查本地备份".into());
+                }
+                if source == j.after || current == aux.after {
+                    self.write_optional(&self.path(j.agent), j.after.as_deref())?;
+                    self.write_optional(&aux.path, aux.after.as_deref())?;
+                    save_json(&self.record_path(), &j.records)?;
+                }
+            } else if source == j.after {
+                save_json(&self.record_path(), &j.records)?;
             }
             fs::remove_file(journal).map_err(|_| "无法完成配置恢复")?;
         }
@@ -423,6 +634,14 @@ impl ConfigManager {
             .flatten()
             .is_some_and(|s| self.matches(agent, r, &s))
             && (agent != Agent::ClaudeCode || r.claude_config_revision == Some(1))
+            && (agent != Agent::Zcode
+                || match read_optional(&self.zcode_personal_path()) {
+                    Ok(Some(source)) => r.zcode_personal_hash.as_ref().is_some_and(|expected| {
+                        zcode_personal_managed_hash(&source).ok().as_ref() == Some(expected)
+                    }),
+                    Ok(None) => r.zcode_personal_hash.is_none(),
+                    Err(_) => false,
+                })
     }
     pub fn configured(&self, credential: Option<&str>) -> Result<Value> {
         let records = self.records()?;
@@ -488,6 +707,7 @@ impl ConfigManager {
         before: Option<String>,
         after: Option<String>,
         records: Records,
+        auxiliary: Option<AuxiliaryFile>,
     ) -> Result<()> {
         let journal = self.paths.state.join("config-transaction.json");
         let j = Journal {
@@ -495,16 +715,25 @@ impl ConfigManager {
             before,
             after,
             records,
+            auxiliary,
         };
         save_json(&journal, &j)?;
-        if let Some(s) = &j.after {
-            atomic_write(&self.path(agent), s.as_bytes())?;
-        } else {
-            fs::remove_file(self.path(agent)).map_err(|_| "无法恢复原始配置状态")?;
+        self.write_optional(&self.path(agent), j.after.as_deref())?;
+        if let Some(aux) = &j.auxiliary {
+            self.write_optional(&aux.path, aux.after.as_deref())?;
         }
         save_json(&self.record_path(), &j.records)?;
         fs::remove_file(journal).map_err(|_| "无法完成配置事务")?;
         Ok(())
+    }
+    fn write_optional(&self, path: &std::path::Path, content: Option<&str>) -> Result<()> {
+        if let Some(content) = content {
+            atomic_write(path, content.as_bytes())
+        } else if path.exists() {
+            fs::remove_file(path).map_err(|_| "无法恢复原始配置状态".into())
+        } else {
+            Ok(())
+        }
     }
     pub fn apply(
         &self,
@@ -551,8 +780,24 @@ impl ConfigManager {
             Agent::Zcode => zcode_configuration(source, base, credential, model)?,
             _ => codex_configuration(source, base, credential, model, &managed)?,
         };
-        let changed =
+        let personal_before = if agent == Agent::Zcode {
+            read_optional(&self.zcode_personal_path())?
+        } else {
+            None
+        };
+        let personal_next = personal_before
+            .as_deref()
+            .map(|source| zcode_personal_configuration(source, base, credential, model))
+            .transpose()?;
+        let personal_changed = match (&personal_before, &personal_next) {
+            (Some(before), Some(after)) => {
+                zcode_personal_managed_hash(before)? != zcode_personal_managed_hash(after)?
+            }
+            _ => false,
+        };
+        let legacy_changed =
             before.is_none() || semantic_hash(agent, source)? != semantic_hash(agent, &next)?;
+        let changed = legacy_changed || personal_changed;
         if changed && running && agent.desktop() {
             let name = if agent == Agent::Zcode {
                 "ZCode"
@@ -573,6 +818,29 @@ impl ConfigManager {
         } else {
             None
         };
+        let personal_before_apply_backup =
+            if personal_before.is_some() && (personal_changed || current.is_none()) {
+                let p = self.paths.state.join("backups").join(format!(
+                    "before-apply-zcode-personal-{}.backup",
+                    uuid::Uuid::new_v4()
+                ));
+                atomic_write(&p, personal_before.as_deref().unwrap().as_bytes())?;
+                Some(p)
+            } else {
+                None
+            };
+        let personal_original_exists = current
+            .map(|r| r.zcode_personal_original_exists)
+            .unwrap_or(personal_before.is_some());
+        let personal_backup = current
+            .and_then(|r| r.zcode_personal_backup.clone())
+            .or_else(|| {
+                if current.is_none() && personal_original_exists {
+                    personal_before_apply_backup.clone()
+                } else {
+                    None
+                }
+            });
         let original_exists = current
             .map(|r| r.original_exists)
             .unwrap_or(before.is_some());
@@ -618,15 +886,30 @@ impl ConfigManager {
                 && current.is_some_and(|r| {
                     r.preserve_zcode_external_changes || r.hash != hash(source.as_bytes())
                 }),
+            zcode_personal_backup: personal_backup,
+            zcode_personal_original_exists: personal_original_exists,
+            zcode_personal_hash: personal_next
+                .as_deref()
+                .map(zcode_personal_managed_hash)
+                .transpose()?,
         };
         records.insert(agent.key().into(), r);
         if changed {
-            self.commit(agent, before, Some(next), records)?;
+            let auxiliary = if personal_changed {
+                Some(AuxiliaryFile {
+                    path: self.zcode_personal_path(),
+                    before: personal_before,
+                    after: personal_next,
+                })
+            } else {
+                None
+            };
+            self.commit(agent, before, Some(next), records, auxiliary)?;
         } else {
             save_json(&self.record_path(), &records)?;
         }
         Ok(
-            json!({"path":self.path(agent),"changed":changed,"beforeApplyBackup":before_apply_backup,"warnings":self.warnings(agent,"")?}),
+            json!({"path":self.path(agent),"changed":changed,"beforeApplyBackup":before_apply_backup,"personalBeforeApplyBackup":personal_before_apply_backup,"warnings":self.warnings(agent,"")?}),
         )
     }
     pub fn restore(&self, agent: Agent) -> Result<Value> {
@@ -660,8 +943,37 @@ impl ConfigManager {
         } else {
             original
         };
+        let auxiliary = if agent == Agent::Zcode && r.zcode_personal_hash.is_some() {
+            let path = self.zcode_personal_path();
+            let personal_before =
+                read_optional(&path)?.ok_or("ZCode 新版供应商配置已消失，自动恢复已暂停")?;
+            if zcode_personal_managed_hash(&personal_before).ok() != r.zcode_personal_hash {
+                return Err("ZCode 新版供应商配置已被修改，自动恢复已暂停".into());
+            }
+            let original = if r.zcode_personal_original_exists {
+                let backup = r
+                    .zcode_personal_backup
+                    .as_ref()
+                    .ok_or("ZCode 新版供应商配置备份不存在")?;
+                if !backup.starts_with(self.paths.state.join("backups")) {
+                    return Err("备份路径无效".into());
+                }
+                Some(read_optional(backup)?.ok_or("ZCode 新版供应商配置备份不存在")?)
+            } else {
+                None
+            };
+            let personal_after =
+                zcode_personal_restored(&personal_before, original.as_deref(), &r.model_id)?;
+            Some(AuxiliaryFile {
+                path,
+                before: Some(personal_before),
+                after: Some(personal_after),
+            })
+        } else {
+            None
+        };
         records.remove(agent.key());
-        self.commit(agent, before, after, records)?;
+        self.commit(agent, before, after, records, auxiliary)?;
         Ok(json!({"path":self.path(agent)}))
     }
 }

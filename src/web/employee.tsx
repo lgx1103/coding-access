@@ -89,6 +89,7 @@ export function Employee({ notify }: { notify: (message: string) => void }) {
       <div className="agent-tabs" role="tablist" aria-label="编程工具">{AGENTS.map(a => <button role="tab" aria-selected={a.id === agent} className={agent === a.id ? 'active' : ''} key={a.id} disabled={Boolean(busy)} onClick={() => { setAgent(a.id); setFailure(''); }}>{isDesktopAgent(a.id) ? <Monitor size={16} /> : <Terminal size={16} />}<span>{a.name}</span></button>)}</div>
     </div>
     {(failure || error) && <Notice error>{failure || error}</Notice>}
+    {state?.credentialExpired && <Notice warning>公司访问凭证已失效。请完全退出 {toolName}，点击当前模型的「同步」，再重新打开工具；若提示登录过期，请先重新登录 Coding Access。</Notice>}
     {defaultUnavailable && <Notice>当前默认模型「{applied?.modelName}」已不可用，可能已下架、调整使用范围或不再对当前工具开放。请选择其他模型；本地默认配置尚未更改。</Notice>}
     {!desktop && <Notice>请使用 Windows 或 macOS 客户端配置编程工具、选择项目并打开终端。</Notice>}
     {desktop && inspection && !inspection.installed && <Notice warning>未检测到 {toolName}，请先安装工具。</Notice>}

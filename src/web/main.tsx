@@ -21,6 +21,7 @@ import { APP_VERSION } from '../shared/version.js';
 import { DEFAULT_SERVICE_URL } from '../shared/service-url.js';
 import { PASSWORD_MIN_LENGTH } from '../shared/password-policy.js';
 import { WindowControls } from './window-controls.js';
+import { usePageNavigation } from './page-navigation.js';
 import './styles.css';
 import './client-focus.css';
 
@@ -176,7 +177,7 @@ function App() {
   const [server, setServer] = useState('');
   const [version, setVersion] = useState(APP_VERSION);
   const [development, setDevelopment] = useState(false);
-  const [page, setPage] = useState('overview');
+  const [page, setPage] = usePageNavigation(user?.role, Boolean(desktop));
   const [keyProvider, setKeyProvider] = useState('all');
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [page]);
   const [toast, setToast] = useState('');
@@ -185,7 +186,7 @@ function App() {
   const logoutPending = useRef(false);
   const errorRef = useRef<HTMLDivElement>(null);
   function setIdentity(next: PublicUser | null) {
-    setUser(next); setPage('overview'); setToast(''); setError('');
+    setUser(next); if (desktop) setPage('overview'); setToast(''); setError('');
   }
   async function load() {
     try {

@@ -1,5 +1,5 @@
 import { tauriBridge } from './tauri-bridge';
-export interface DesktopState { development?: boolean; upgradeError?: string | null; upgradeIssues?: MigrationAgent[]; serverUrl: string; projectDirectory: string; version: string; platform: string; configured: Record<string, { modelId: string; modelName: string; appliedAt: number; path: string; credentialId: string; needsUpdate?: boolean }> }
+export interface DesktopState { development?: boolean; upgradeError?: string | null; upgradeIssues?: MigrationAgent[]; credentialExpired?: boolean; serverUrl: string; projectDirectory: string; version: string; platform: string; configured: Record<string, { modelId: string; modelName: string; appliedAt: number; path: string; credentialId: string; needsUpdate?: boolean }> }
 export interface Inspection { executablePath?: string | null; installed: boolean; version: string | null; path: string; sharedWith: string[]; warnings: string[]; configuredModel?: string }
 export interface MigrationAgent { agent: string; modelName: string; status: 'ready' | 'skipped'; message: string }
 export interface MigrationReceipt { id: string; importedAt: number; sourceId: string; agents: MigrationAgent[]; needsLogin: boolean }

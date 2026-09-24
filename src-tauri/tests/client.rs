@@ -173,6 +173,75 @@ async fn transient_validation_failure_does_not_issue_new_credential() {
     );
 }
 #[tokio::test]
+async fn revoked_agent_credential_is_shown_as_needing_sync() {
+    let (_t, mut c) = setup();
+    let (url, requests, server) = mock(vec![
+        (200, login()),
+        (200, catalog()),
+        (
+            200,
+            json!({"apiKey":"synthetic-api","credentialId":"key-id"}),
+        ),
+        (200, catalog()),
+        (401, json!({"error":{"code":"invalid_api_key"}})),
+    ]);
+    c.login(&url, "employee", "test-password").await.unwrap();
+    c.apply(Agent::Zcode, "model").await.unwrap();
+    assert_eq!(
+        c.state().unwrap()["configured"]["zcode"]["needsUpdate"],
+        false
+    );
+    let state = c.live_state().await.unwrap();
+    assert_eq!(state["credentialExpired"], true);
+    assert_eq!(state["configured"]["zcode"]["needsUpdate"], true);
+    assert!(!state.to_string().contains("synthetic-api"));
+    server.join().unwrap();
+    let requests = requests.lock().unwrap();
+    assert!(requests[4].starts_with("GET /v1/models "));
+    assert!(requests[4]
+        .to_lowercase()
+        .contains("authorization: bearer synthetic-api"));
+}
+#[tokio::test]
+async fn temporary_gateway_failure_does_not_claim_credential_is_revoked() {
+    let (_t, mut c) = setup();
+    let (url, _, server) = mock(vec![
+        (200, login()),
+        (200, catalog()),
+        (
+            200,
+            json!({"apiKey":"synthetic-api","credentialId":"key-id"}),
+        ),
+        (200, catalog()),
+        (503, json!({"error":{"code":"service_unavailable"}})),
+    ]);
+    c.login(&url, "employee", "test-password").await.unwrap();
+    c.apply(Agent::Zcode, "model").await.unwrap();
+    let state = c.live_state().await.unwrap();
+    assert_eq!(state["credentialExpired"], Value::Null);
+    assert_eq!(state["configured"]["zcode"]["needsUpdate"], false);
+    server.join().unwrap();
+}
+#[tokio::test]
+async fn unavailable_catalog_does_not_trigger_second_credential_probe() {
+    let (_t, mut c) = setup();
+    let (url, requests, server) = mock(vec![
+        (200, login()),
+        (200, catalog()),
+        (
+            200,
+            json!({"apiKey":"synthetic-api","credentialId":"key-id"}),
+        ),
+        (503, json!({"error":{"code":"service_unavailable"}})),
+    ]);
+    c.login(&url, "employee", "test-password").await.unwrap();
+    c.apply(Agent::Zcode, "model").await.unwrap();
+    let state = c.live_state().await.unwrap();
+    assert_eq!(state["credentialExpired"], Value::Null);
+    server.join().unwrap();
+    assert_eq!(requests.lock().unwrap().len(), 4);
+}
+#[tokio::test]
 async fn stale_or_unpublished_model_cannot_be_applied() {
     let (_t, mut c) = setup();
     let (url, r, h) = mock(vec![(200, login()), (200, json!({"models":[]}))]);
@@ -245,39 +314,81 @@ fn window_preferences_migrate_and_remember_without_revalidating_stale_project() 
 #[tokio::test]
 async fn remembered_login_survives_logout_and_updates_without_exposing_password() {
     let (t, mut c) = setup();
-    let (url, requests, h) = mock(vec![(200, login()), (200, json!({"ok":true})), (200, login())]);
-    c.login_remembered(&url, "employee", "original-secret", true, false).await.unwrap();
+    let (url, requests, h) = mock(vec![
+        (200, login()),
+        (200, json!({"ok":true})),
+        (200, login()),
+    ]);
+    c.login_remembered(&url, "employee", "original-secret", true, false)
+        .await
+        .unwrap();
     let hint = c.remembered_login(&url, None).unwrap();
     assert_eq!(hint, json!({"username":"employee","remembered":true}));
     assert!(!hint.to_string().contains("secret"));
-    assert!(!std::fs::read_to_string(t.path().join("state/preferences.json")).unwrap().contains("secret"));
+    assert!(
+        !std::fs::read_to_string(t.path().join("state/preferences.json"))
+            .unwrap()
+            .contains("secret")
+    );
     c.refresh_saved_password("updated-secret").unwrap();
     c.logout().await.unwrap();
     assert!(!c.has_credentials());
     assert_eq!(c.remembered_login(&url, None).unwrap()["remembered"], true);
-    assert_eq!(c.remembered_login("https://another.test", Some("employee")).unwrap()["remembered"], false);
-    assert_eq!(c.remembered_login(&url, Some("another")).unwrap()["remembered"], false);
-    assert!(c.login_remembered("https://another.test", "employee", "", true, true).await.is_err());
-    c.login_remembered(&url, "employee", "", true, true).await.unwrap();
+    assert_eq!(
+        c.remembered_login("https://another.test", Some("employee"))
+            .unwrap()["remembered"],
+        false
+    );
+    assert_eq!(
+        c.remembered_login(&url, Some("another")).unwrap()["remembered"],
+        false
+    );
+    assert!(c
+        .login_remembered("https://another.test", "employee", "", true, true)
+        .await
+        .is_err());
+    c.login_remembered(&url, "employee", "", true, true)
+        .await
+        .unwrap();
     h.join().unwrap();
     assert!(requests.lock().unwrap()[2].contains("updated-secret"));
     c.clear_saved_logins().unwrap();
     assert!(c.has_credentials());
-    assert_eq!(c.remembered_login(&url, None).unwrap(), json!({"username":"","remembered":false}));
+    assert_eq!(
+        c.remembered_login(&url, None).unwrap(),
+        json!({"username":"","remembered":false})
+    );
 }
 
 #[tokio::test]
 async fn failed_login_does_not_replace_saved_password_and_unchecking_removes_it() {
     let (_t, mut c) = setup();
-    let (url, requests, h) = mock(vec![(200, login()), (401, json!({})), (200, login()), (200, login())]);
-    c.login_remembered(&url, "employee", "saved-secret", true, false).await.unwrap();
-    assert!(c.login_remembered(&url, "employee", "wrong-secret", true, false).await.is_err());
-    c.login_remembered(&url, "employee", "", true, true).await.unwrap();
-    c.login_remembered(&url, "employee", "typed-secret", false, false).await.unwrap();
+    let (url, requests, h) = mock(vec![
+        (200, login()),
+        (401, json!({})),
+        (200, login()),
+        (200, login()),
+    ]);
+    c.login_remembered(&url, "employee", "saved-secret", true, false)
+        .await
+        .unwrap();
+    assert!(c
+        .login_remembered(&url, "employee", "wrong-secret", true, false)
+        .await
+        .is_err());
+    c.login_remembered(&url, "employee", "", true, true)
+        .await
+        .unwrap();
+    c.login_remembered(&url, "employee", "typed-secret", false, false)
+        .await
+        .unwrap();
     h.join().unwrap();
     assert!(requests.lock().unwrap()[2].contains("saved-secret"));
     assert_eq!(c.remembered_login(&url, None).unwrap()["remembered"], false);
-    assert!(c.login_remembered(&url, "employee", "", false, true).await.is_err());
+    assert!(c
+        .login_remembered(&url, "employee", "", false, true)
+        .await
+        .is_err());
 }
 
 #[tokio::test]
@@ -286,18 +397,38 @@ async fn saved_login_is_restored_from_vault_after_client_restart() {
     #[derive(Clone)]
     struct SharedVault(Arc<Mutex<Option<String>>>);
     impl Vault for SharedVault {
-        fn load(&self) -> coding_access_native::Result<Option<String>> { Ok(self.0.lock().unwrap().clone()) }
-        fn save(&self, value: &str) -> coding_access_native::Result<()> { *self.0.lock().unwrap() = Some(value.into()); Ok(()) }
+        fn load(&self) -> coding_access_native::Result<Option<String>> {
+            Ok(self.0.lock().unwrap().clone())
+        }
+        fn save(&self, value: &str) -> coding_access_native::Result<()> {
+            *self.0.lock().unwrap() = Some(value.into());
+            Ok(())
+        }
     }
-    let (_t, initial) = setup(); let paths = initial.config.paths.clone();
+    let (_t, initial) = setup();
+    let paths = initial.config.paths.clone();
     let vault = SharedVault(Arc::new(Mutex::new(None)));
     let mut c = Client::new(paths.clone(), Box::new(vault.clone())).unwrap();
-    let (url, requests, h) = mock(vec![(200, login()), (200, json!({"ok":true})), (200, login())]);
-    c.login_remembered(&url, "employee", "restart-secret", true, false).await.unwrap();
-    c.logout().await.unwrap(); drop(c);
+    let (url, requests, h) = mock(vec![
+        (200, login()),
+        (200, json!({"ok":true})),
+        (200, login()),
+    ]);
+    c.login_remembered(&url, "employee", "restart-secret", true, false)
+        .await
+        .unwrap();
+    c.logout().await.unwrap();
+    drop(c);
     let mut reopened = Client::new(paths, Box::new(vault)).unwrap();
     assert!(!reopened.has_credentials());
-    assert_eq!(reopened.remembered_login(&url, None).unwrap(), json!({"username":"employee","remembered":true}));
-    reopened.login_remembered(&url, "employee", "", true, true).await.unwrap();
-    h.join().unwrap(); assert!(requests.lock().unwrap()[2].contains("restart-secret"));
+    assert_eq!(
+        reopened.remembered_login(&url, None).unwrap(),
+        json!({"username":"employee","remembered":true})
+    );
+    reopened
+        .login_remembered(&url, "employee", "", true, true)
+        .await
+        .unwrap();
+    h.join().unwrap();
+    assert!(requests.lock().unwrap()[2].contains("restart-secret"));
 }

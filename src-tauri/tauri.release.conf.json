@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Coding Access",
-  "version": "0.2.0-beta.12",
+  "version": "0.2.0-beta.14",
   "identifier": "com.codingaccess.native",
   "build": {
     "beforeDevCommand": "npm run dev:tauri:web",
